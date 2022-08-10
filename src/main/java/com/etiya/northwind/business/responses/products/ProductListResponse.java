@@ -1,6 +1,5 @@
 package com.etiya.northwind.business.responses.products;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +19,7 @@ public class ProductListResponse {
 
     private int categoryId;
 
-    private String category_id;
-
     private String categoryName;
+
+    private int discontinued;
 }

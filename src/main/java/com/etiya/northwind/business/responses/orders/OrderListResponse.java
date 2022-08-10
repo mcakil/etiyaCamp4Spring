@@ -12,7 +12,7 @@ import java.time.LocalDate;
 public class OrderListResponse {
 
     private int orderId;
-    private String customerName;
+    private String contactName;
     private String employeeName;
     private LocalDate orderDate;
 }

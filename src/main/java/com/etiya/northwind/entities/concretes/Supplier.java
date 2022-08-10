@@ -15,7 +15,6 @@ import javax.persistence.*;
 public class Supplier {
         @Id
         @Column(name="supplier_id")
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
         private int supplierId;
 
         @Column(name="company_name")

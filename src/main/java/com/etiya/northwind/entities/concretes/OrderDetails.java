@@ -5,17 +5,30 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Table(name="order_details")
 @Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
+@IdClass(OrderDetailsId.class)
 public class OrderDetails{
 
-    @EmbeddedId
-    private OrderDetailsId orderDetailsId;
+    @Id
+    @Column(name="order_id")
+    private int orderId;
+
+    @ManyToOne
+    @JoinColumn(name = "order_id", insertable = false, updatable = false)
+    private Order order;
+
+    @Id
+    @Column(name="product_id")
+    private int productId;
+
+    @ManyToOne
+    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    private Product product;
 
     @Column(name="unit_price")
     private double unitPrice;
