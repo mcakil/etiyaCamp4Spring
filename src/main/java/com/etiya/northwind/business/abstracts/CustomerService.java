@@ -4,19 +4,19 @@ import com.etiya.northwind.business.requests.customerRequests.CreateCustomerRequ
 import com.etiya.northwind.business.requests.customerRequests.UpdateCustomerRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.customers.CustomerListResponse;
-
-
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
 
 import java.util.List;
 
 public interface CustomerService {
-    void add(CreateCustomerRequest createCustomerRequest);
-    void update(UpdateCustomerRequest updateCustomerRequest);
-    void delete(String customerId);
-    List<CustomerListResponse> getAll();
-    CustomerListResponse getById(String customerId);
+    Result add(CreateCustomerRequest createCustomerRequest);
+    Result update(UpdateCustomerRequest updateCustomerRequest);
+    Result delete(String customerId);
+    DataResult<List<CustomerListResponse>> getAll();
+    DataResult<CustomerListResponse> getById(String customerId);
 
-    PageDataResponse<CustomerListResponse> getByPage(int pageNumber, int customerAmountInPage);
+    DataResult<PageDataResponse<CustomerListResponse>> getByPage(int pageNumber, int orderAmountInPage);
 
-    PageDataResponse<CustomerListResponse> getByPageWithSorting(int pageNumber, int customerAmountInPage, String fieldName, boolean isAsc);
+    DataResult<PageDataResponse<CustomerListResponse>> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc);
 }

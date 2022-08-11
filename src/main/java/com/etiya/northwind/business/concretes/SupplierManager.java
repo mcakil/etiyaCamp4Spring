@@ -5,7 +5,12 @@ import com.etiya.northwind.business.requests.supplierRequests.CreateSupplierRequ
 import com.etiya.northwind.business.requests.supplierRequests.UpdateSupplierRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.suppliers.SupplierListResponse;
+import com.etiya.northwind.core.exceptions.BusinessException;
 import com.etiya.northwind.core.mapping.ModelMapperService;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
+import com.etiya.northwind.core.results.SuccessDataResult;
+import com.etiya.northwind.core.results.SuccessResult;
 import com.etiya.northwind.dataAccess.abstracts.SupplierRepository;
 import com.etiya.northwind.entities.concretes.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,72 +35,73 @@ public class SupplierManager implements SupplierService {
 
 
     @Override
-    public void add(CreateSupplierRequest createSupplierRequest) {
+    public Result add(CreateSupplierRequest createSupplierRequest) {
         Supplier supplier = this.modelMapperService.forRequest().map(createSupplierRequest, Supplier.class);
         supplierRepository.save(supplier);
+        return new SuccessResult("Added");
     }
 
     @Override
-    public void update(UpdateSupplierRequest updateSupplierRequest) {
+    public Result update(UpdateSupplierRequest updateSupplierRequest) {
         Supplier supplier = this.modelMapperService.forRequest().map(updateSupplierRequest, Supplier.class);
         supplierRepository.save(supplier);
+        return new SuccessResult("Updated");
     }
 
     @Override
-    public void delete(int supplierId) {
-        if (this.supplierRepository.existsById(supplierId)){
-            this.supplierRepository.deleteById(supplierId);
-        }else{
-            System.out.println("Gecersiz Tedarikçi ID");
-        }
+    public Result delete(int supplierId) {
+        checkSupplierExists(supplierId);
+        this.supplierRepository.deleteById(supplierId);
+        return new SuccessResult("Deleted successfully.");
     }
 
     @Override
-    public List<SupplierListResponse> getAll() {
+    public DataResult<List<SupplierListResponse>> getAll() {
         List<Supplier> result = this.supplierRepository.findAll();
         List<SupplierListResponse> response = result.stream()
-                .map(supplier -> this.modelMapperService.forResponse().map(supplier, SupplierListResponse.class))
+                .map(supplier -> this.modelMapperService.forResponse()
+                        .map(supplier, SupplierListResponse.class))
                 .collect(Collectors.toList());
-
-        return response;
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public SupplierListResponse getById(int supplierId) {
-        SupplierListResponse response = new SupplierListResponse();
-        if (this.supplierRepository.existsById(supplierId)){
-            Supplier supplier = this.supplierRepository.findById(supplierId).get();
-            response = this.modelMapperService.forResponse().map(supplier, SupplierListResponse.class);
-        }
-        else{
-            System.out.println("Gecersiz Tedarikçi ID");
-        }
-        return response;
+    public DataResult<SupplierListResponse> getById(int supplierId) {
+        Supplier supplier = this.supplierRepository.findById(supplierId).orElseThrow(() -> new BusinessException("Supplier not found."));
+        SupplierListResponse response = this.modelMapperService.forResponse().map(supplier, SupplierListResponse.class);
+
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public PageDataResponse<SupplierListResponse> getByPage(int pageNumber, int supplierAmountInPage) {
+    public DataResult<PageDataResponse<SupplierListResponse>> getByPage(int pageNumber, int supplierAmountInPage) {
         Pageable pageable = PageRequest.of(pageNumber-1,supplierAmountInPage);
-        Page<Supplier> pages = this.supplierRepository.findAllSuppliers(pageable);
-        List<SupplierListResponse> response =
-                pages.getContent().stream().map(supplier -> this.modelMapperService.forResponse().map(supplier, SupplierListResponse.class)).collect(Collectors.toList());
-
-        return new PageDataResponse<SupplierListResponse>(response,pages.getTotalPages(),pages.getTotalElements(), pageNumber);
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
     }
 
     @Override
-    public PageDataResponse<SupplierListResponse> getByPageWithSorting(int pageNumber, int supplierAmountInPage, String fieldName, boolean isAsc) {
+    public DataResult<PageDataResponse<SupplierListResponse>> getByPageWithSorting(int pageNumber, int supplierAmountInPage, String fieldName, boolean isAsc) {
         Pageable pageable;
         if (isAsc){
             pageable = PageRequest.of(pageNumber-1,supplierAmountInPage, Sort.by(fieldName).ascending());
         }else {
             pageable = PageRequest.of(pageNumber-1,supplierAmountInPage, Sort.by(fieldName).descending());
         }
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
+    }
+
+    private PageDataResponse<SupplierListResponse> getPageDataResponse(int pageNumber, Pageable pageable) {
         Page<Supplier> pages = this.supplierRepository.findAllSuppliers(pageable);
         List<SupplierListResponse> response =
                 pages.getContent().stream().map(supplier -> this.modelMapperService.forResponse().map(supplier, SupplierListResponse.class)).collect(Collectors.toList());
 
-        return new PageDataResponse<SupplierListResponse>(response,pages.getTotalPages(),pages.getTotalElements(), pageNumber);
+        return new PageDataResponse<SupplierListResponse>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
     }
-}
 
+    private void checkSupplierExists(int supplierId) {
+        if (!supplierRepository.existsById(supplierId)){
+            throw new BusinessException("Supplier does not exist.");
+        }
+    }
+
+}

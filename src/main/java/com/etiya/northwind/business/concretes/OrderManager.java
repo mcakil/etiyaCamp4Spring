@@ -1,16 +1,25 @@
 package com.etiya.northwind.business.concretes;
 
 import com.etiya.northwind.business.abstracts.OrderService;
-import com.etiya.northwind.business.requests.orderDetailRequests.CreateOrderDetailInOrderRequest;
+import com.etiya.northwind.business.requests.orderDetailRequests.CreateOrderDetailRequest;
 import com.etiya.northwind.business.requests.orderRequests.CreateOrderRequest;
-import com.etiya.northwind.business.requests.orderRequests.OrderRequest;
 import com.etiya.northwind.business.requests.orderRequests.UpdateOrderRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.orders.OrderListResponse;
+import com.etiya.northwind.business.responses.orders.OrderListResponse;
+import com.etiya.northwind.business.responses.orders.OrderListResponse;
+import com.etiya.northwind.business.responses.orders.OrderListResponse;
+import com.etiya.northwind.core.exceptions.BusinessException;
 import com.etiya.northwind.core.mapping.ModelMapperService;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
+import com.etiya.northwind.core.results.SuccessDataResult;
+import com.etiya.northwind.core.results.SuccessResult;
 import com.etiya.northwind.dataAccess.abstracts.*;
 import com.etiya.northwind.entities.concretes.Order;
 import com.etiya.northwind.entities.concretes.OrderDetails;
+import com.etiya.northwind.entities.concretes.Order;
+import com.etiya.northwind.entities.concretes.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,94 +34,102 @@ import java.util.stream.Collectors;
 @Service
 public class OrderManager implements OrderService {
     private OrderRepository orderRepository;
-    private OrderDetailsRepository orderDetailsRepository;
     private ModelMapperService modelMapperService;
 
+    private ProductRepository productRepository;
+    private OrderDetailsRepository orderDetailsRepository;
+    private CustomerRepository customerRepository;
+    private EmployeeRepository employeeRepository;
 
     @Autowired
-    public OrderManager(OrderRepository orderRepository, ModelMapperService modelMapperService, OrderDetailsRepository orderDetailsRepository) {
+    public OrderManager(OrderRepository orderRepository, ModelMapperService modelMapperService, ProductRepository productRepository, OrderDetailsRepository orderDetailsRepository, EmployeeRepository employeeRepository, CustomerRepository customerRepository) {
         this.orderRepository = orderRepository;
         this.modelMapperService = modelMapperService;
+        this.productRepository = productRepository;
         this.orderDetailsRepository = orderDetailsRepository;
+        this.customerRepository = customerRepository;
+        this.employeeRepository = employeeRepository;
     }
 
 
     @Override
-    public void add(CreateOrderRequest createOrderRequest) {
-        Order order = this.modelMapperService.forRequest().map(createOrderRequest, Order.class);
+    public Result add(CreateOrderRequest createOrderRequest) {
+        Order order = new Order();
+        order.setOrderId(createOrderRequest.getOrderId());
+        order.setOrderDate(createOrderRequest.getOrderDate());
+        order.setCustomer(this.customerRepository.findById(createOrderRequest.getCustomerId()).get());
+        order.setEmployee(this.employeeRepository.findById(createOrderRequest.getEmployeeId()).get());
         orderRepository.save(order);
         saveOrderDetails(createOrderRequest, order);
+        return new SuccessResult();
     }
 
     @Override
-    public void update(UpdateOrderRequest updateOrderRequest) {
+    public Result update(UpdateOrderRequest updateOrderRequest) {
         Order order = this.modelMapperService.forRequest().map(updateOrderRequest, Order.class);
         orderRepository.save(order);
-        saveOrderDetails(updateOrderRequest, order);
+        return new SuccessResult();
     }
 
     @Override
-    public void delete(int orderId) {
-        if (orderRepository.existsById(orderId)) {
+    public Result delete(int orderId) {
+        if(orderRepository.existsById(orderId)){
             orderRepository.deleteById(orderId);
-        } else {
+        }
+        else{
             System.out.println("Gecersiz Siparis ID");
         }
+        return new SuccessResult();
     }
 
     @Override
-    public List<OrderListResponse> getAll() {
+    public DataResult<List<OrderListResponse>> getAll() {
         List<Order> result = this.orderRepository.findAll();
         List<OrderListResponse> response =
                 result.stream().map(order -> this.modelMapperService.forResponse().map(order, OrderListResponse.class)).collect(Collectors.toList());
 
-        for (int i = 0; i < result.size(); i++) {
-            response.get(i).setEmployeeName(result.get(i).getEmployee().getFirstName() + " " + result.get(i).getEmployee().getLastName());
+        for (int i = 0;i < result.size(); i++){
+            response.get(i).setEmployeeName(result.get(i).getEmployee().getFirstName()+" "+result.get(i).getEmployee().getLastName());
         }
-        return response;
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public OrderListResponse getById(int orderId) {
-        OrderListResponse response = new OrderListResponse();
-        if (this.orderRepository.existsById(orderId)) {
-            Order order = this.orderRepository.findById(orderId).get();
-            response = this.modelMapperService.forResponse().map(order, OrderListResponse.class);
-            response.setEmployeeName(order.getEmployee().getFirstName() + " " + order.getEmployee().getLastName());
-        } else {
-            System.out.println("Gecersiz Siparis ID");
-        }
-        return response;
+    public DataResult<OrderListResponse> getById(int orderId) {
+        Order order = this.orderRepository.findById(orderId).orElseThrow(() -> new BusinessException("Order not found."));
+        OrderListResponse response = this.modelMapperService.forResponse().map(order, OrderListResponse.class);
+
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public PageDataResponse<OrderListResponse> getByPage(int pageNumber, int orderAmountInPage) {
-        Pageable pageable = PageRequest.of(pageNumber - 1, orderAmountInPage);
-        Page<Order> pages = this.orderRepository.findAllOrders(pageable);
-        List<OrderListResponse> response =
-                pages.getContent().stream().map(order -> this.modelMapperService.forResponse().map(order, OrderListResponse.class)).collect(Collectors.toList());
-
-        return new PageDataResponse<OrderListResponse>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
+    public DataResult<PageDataResponse<OrderListResponse>> getByPage(int pageNumber, int orderAmountInPage) {
+        Pageable pageable = PageRequest.of(pageNumber-1,orderAmountInPage);
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
     }
 
     @Override
-    public PageDataResponse<OrderListResponse> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc) {
+    public DataResult<PageDataResponse<OrderListResponse>> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc) {
         Pageable pageable;
-        if (isAsc) {
-            pageable = PageRequest.of(pageNumber - 1, orderAmountInPage, Sort.by(fieldName).ascending());
-        } else {
-            pageable = PageRequest.of(pageNumber - 1, orderAmountInPage, Sort.by(fieldName).descending());
+        if (isAsc){
+            pageable = PageRequest.of(pageNumber-1,orderAmountInPage, Sort.by(fieldName).ascending());
+        }else {
+            pageable = PageRequest.of(pageNumber-1,orderAmountInPage, Sort.by(fieldName).descending());
         }
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
+    }
+
+    private PageDataResponse<OrderListResponse> getPageDataResponse(int pageNumber, Pageable pageable) {
         Page<Order> pages = this.orderRepository.findAllOrders(pageable);
         List<OrderListResponse> response =
                 pages.getContent().stream().map(order -> this.modelMapperService.forResponse().map(order, OrderListResponse.class)).collect(Collectors.toList());
 
-        return new PageDataResponse<OrderListResponse>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
+        return new PageDataResponse<>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
     }
 
-    private void saveOrderDetails(OrderRequest orderRequest, Order order) {
+    private void saveOrderDetails(CreateOrderRequest createOrderRequest, Order order) {
         List<OrderDetails> orderDetailsList = new ArrayList<>();
-        for (CreateOrderDetailInOrderRequest detailRequest : orderRequest.getOrderDetailRequests()) {
+        for (CreateOrderDetailRequest detailRequest : createOrderRequest.getOrderDetailRequests()) {
             OrderDetails orderDetails = this.modelMapperService.forRequest().map(detailRequest, OrderDetails.class);
             orderDetails.setOrderId(order.getOrderId());
             orderDetails.setOrder(order);

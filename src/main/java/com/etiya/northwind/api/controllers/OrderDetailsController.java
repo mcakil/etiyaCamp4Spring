@@ -5,6 +5,9 @@ import com.etiya.northwind.business.requests.orderDetailRequests.CreateOrderDeta
 import com.etiya.northwind.business.requests.orderDetailRequests.UpdateOrderDetailRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.orderDetails.OrderDetailsListResponse;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
+import com.etiya.northwind.entities.concretes.OrderDetailsId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,39 +25,39 @@ public class OrderDetailsController {
     }
 
     @GetMapping("/getall")
-    public List<OrderDetailsListResponse> getAll() {
+    public DataResult<List<OrderDetailsListResponse>> getAll(){
         return this.orderDetailsService.getAll();
     }
 
 
     @PostMapping("/add")
-    public void add(@RequestBody @Valid CreateOrderDetailRequest createOrderDetailRequest) {
-        this.orderDetailsService.add(createOrderDetailRequest);
+    public Result add(@RequestBody @Valid CreateOrderDetailRequest createOrderDetailRequest){
+        return this.orderDetailsService.add(createOrderDetailRequest);
     }
 
     @PostMapping("/update")
-    public void update(@RequestBody @Valid UpdateOrderDetailRequest updateOrderDetailRequest) {
-        this.orderDetailsService.update(updateOrderDetailRequest);
+    public Result update(@RequestBody @Valid UpdateOrderDetailRequest updateOrderDetailRequest){
+        return this.orderDetailsService.update(updateOrderDetailRequest);
     }
 
-    @DeleteMapping("/delete/{orderId}/{productId}")
-    public void delete(@Valid @PathVariable int orderId, @Valid @PathVariable int productId) {
-        this.orderDetailsService.delete(orderId, productId);
+    @DeleteMapping("/delete/{orderDetailsId}")
+    public Result delete(@Valid @PathVariable OrderDetailsId orderDetailsId){
+        return this.orderDetailsService.delete(orderDetailsId);
     }
 
-
-    @GetMapping("/getOrderDetailsByProductId/{productId}")
-    public List<OrderDetailsListResponse> getOrderDetailsByProductId(@PathVariable int productId) {
-        return this.orderDetailsService.getOrderDetailsByProductId(productId);
+    @GetMapping("/getbyid/{orderDetailsId}")
+    public DataResult<OrderDetailsListResponse> getById(@PathVariable OrderDetailsId orderDetailsId){
+        return this.orderDetailsService.getById(orderDetailsId);
     }
+
 
     @GetMapping("/getByPage/{pageNumber}/{orderDetailsAmountInPage}")
-    public PageDataResponse<OrderDetailsListResponse> getByPage(int pageNumber, int orderDetailsAmountInPage) {
-        return this.orderDetailsService.getByPage(pageNumber, orderDetailsAmountInPage);
+    public DataResult<PageDataResponse<OrderDetailsListResponse>> getByPage(int pageNumber, int orderDetailsAmountInPage){
+        return this.orderDetailsService.getByPage(pageNumber,orderDetailsAmountInPage);
     }
 
     @GetMapping("/getByPageWithSorting/{pageNumber}/{orderDetailsAmountInPage}/{fieldName}/{isAsc}")
-    public PageDataResponse<OrderDetailsListResponse> getByPageWithSorting(int pageNumber, int orderDetailsAmountInPage, String fieldName, boolean isAsc) {
-        return this.orderDetailsService.getByPageWithSorting(pageNumber, orderDetailsAmountInPage, fieldName, isAsc);
+    public DataResult<PageDataResponse<OrderDetailsListResponse>> getByPageWithSorting(int pageNumber, int orderDetailsAmountInPage, String fieldName, boolean isAsc){
+        return this.orderDetailsService.getByPageWithSorting(pageNumber,orderDetailsAmountInPage,fieldName,isAsc);
     }
 }

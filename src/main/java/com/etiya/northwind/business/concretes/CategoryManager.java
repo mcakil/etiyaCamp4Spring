@@ -3,10 +3,14 @@ package com.etiya.northwind.business.concretes;
 import com.etiya.northwind.business.abstracts.CategoryService;
 import com.etiya.northwind.business.requests.categoryRequests.CreateCategoryRequest;
 import com.etiya.northwind.business.requests.categoryRequests.UpdateCategoryRequest;
-import com.etiya.northwind.business.requests.employeeRequests.UpdateEmployeeRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.categories.CategoryListResponse;
+import com.etiya.northwind.core.exceptions.BusinessException;
 import com.etiya.northwind.core.mapping.ModelMapperService;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
+import com.etiya.northwind.core.results.SuccessDataResult;
+import com.etiya.northwind.core.results.SuccessResult;
 import com.etiya.northwind.dataAccess.abstracts.CategoryRepository;
 import com.etiya.northwind.entities.concretes.Category;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +19,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,77 +35,80 @@ public class CategoryManager implements CategoryService {
 
 
     @Override
-    public void add(CreateCategoryRequest createCategoryRequest) {
+    public Result add(CreateCategoryRequest createCategoryRequest) {
+        checkIfCategoryNameExists(createCategoryRequest.getCategoryName());
         Category category = this.modelMapperService.forRequest().map(createCategoryRequest, Category.class);
-        this.categoryRepository.save(category);
+        categoryRepository.save(category);
+        return new SuccessResult("Added");
     }
 
     @Override
-    public void update(UpdateCategoryRequest updateCategoryRequest) {
+    public Result update(UpdateCategoryRequest updateCategoryRequest) {
         Category category = this.modelMapperService.forRequest().map(updateCategoryRequest, Category.class);
-        this.categoryRepository.save(category);
+        categoryRepository.save(category);
+        return new SuccessResult("Updated");
     }
 
     @Override
-    public void delete(int categoryId) {
-
-        if(this.categoryRepository.existsById(categoryId)){
-            this.categoryRepository.deleteById(categoryId);
-        }
-        else{
-            System.out.println("Geçersiz Kategori ID");
-        }
-
+    public Result delete(int categoryId) {
+        checkCategoryExists(categoryId);
+        this.categoryRepository.deleteById(categoryId);
+        return new SuccessResult("Deleted successfully.");
     }
 
     @Override
-    public List<CategoryListResponse> getAll() {
+    public DataResult<List<CategoryListResponse>> getAll() {
         List<Category> result = this.categoryRepository.findAll();
-        List<CategoryListResponse> response =
-                result.stream().map(category -> this.modelMapperService.forResponse().map(category, CategoryListResponse.class)).collect(Collectors.toList());
-        return response;
+        List<CategoryListResponse> response = result.stream()
+                .map(category -> this.modelMapperService.forResponse()
+                        .map(category, CategoryListResponse.class))
+                .collect(Collectors.toList());
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public CategoryListResponse getById(int categoryId) {
-        
-        CategoryListResponse response = new CategoryListResponse();
-        if(this.categoryRepository.existsById(categoryId)){
-          Category category = this.categoryRepository.findById(categoryId).get();
-          response = modelMapperService.forResponse().map(category, CategoryListResponse.class);
-        }
-        else{
-            System.out.println("Geçersiz Kategori ID");
-        }
-        return response;
+    public DataResult<CategoryListResponse> getById(int categoryId) {
+        Category category = this.categoryRepository.findById(categoryId).orElseThrow(() -> new BusinessException("Category not found."));
+        CategoryListResponse response = this.modelMapperService.forResponse().map(category, CategoryListResponse.class);
+
+        return new SuccessDataResult<>(response);
     }
 
     @Override
-    public PageDataResponse<CategoryListResponse> getByPage(int pageNumber, int categoryAmountInPage) {
+    public DataResult<PageDataResponse<CategoryListResponse>> getByPage(int pageNumber, int categoryAmountInPage) {
         Pageable pageable = PageRequest.of(pageNumber-1,categoryAmountInPage);
-        Page<Category> pages = this.categoryRepository.findAllCategories(pageable);
-        List<CategoryListResponse> response =
-                pages.getContent().stream().map(category -> this.modelMapperService.forResponse().map(category, CategoryListResponse.class)).collect(Collectors.toList());
-
-        return new PageDataResponse<CategoryListResponse>(response,pages.getTotalPages(),pages.getTotalElements(), pageNumber);
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
     }
 
     @Override
-    public PageDataResponse<CategoryListResponse> getByPageWithSorting(int pageNumber, int categoryAmountInPage, String fieldName, boolean isAsc) {
-        if (Arrays.stream(Category.class.getDeclaredFields()).noneMatch(field -> field.getName().equals(fieldName))){
-            System.out.println("Field does not exist.");
-            return new PageDataResponse<>(new ArrayList<CategoryListResponse>(), 0, 0, 0);
-        }
+    public DataResult<PageDataResponse<CategoryListResponse>> getByPageWithSorting(int pageNumber, int categoryAmountInPage, String fieldName, boolean isAsc) {
         Pageable pageable;
         if (isAsc){
             pageable = PageRequest.of(pageNumber-1,categoryAmountInPage, Sort.by(fieldName).ascending());
         }else {
             pageable = PageRequest.of(pageNumber-1,categoryAmountInPage, Sort.by(fieldName).descending());
         }
+        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
+    }
+
+    private PageDataResponse<CategoryListResponse> getPageDataResponse(int pageNumber, Pageable pageable) {
         Page<Category> pages = this.categoryRepository.findAllCategories(pageable);
         List<CategoryListResponse> response =
                 pages.getContent().stream().map(category -> this.modelMapperService.forResponse().map(category, CategoryListResponse.class)).collect(Collectors.toList());
 
-        return new PageDataResponse<CategoryListResponse>(response,pages.getTotalPages(),pages.getTotalElements(), pageNumber);
+        return new PageDataResponse<CategoryListResponse>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
     }
+
+    private void checkCategoryExists(int categoryId) {
+        if (!categoryRepository.existsById(categoryId)){
+            throw new BusinessException("Category does not exist.");
+        }
+    }
+
+    private void checkIfCategoryNameExists(String categoryName) {
+        if (this.categoryRepository.isCategoryNameExists(categoryName)){
+            throw new BusinessException("Category name already exists in the database.");
+        }
+    }
+
 }

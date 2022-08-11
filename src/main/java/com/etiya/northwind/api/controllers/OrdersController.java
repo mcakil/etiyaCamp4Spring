@@ -6,6 +6,8 @@ import com.etiya.northwind.business.requests.orderRequests.CreateOrderRequest;
 import com.etiya.northwind.business.requests.orderRequests.UpdateOrderRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.orders.OrderListResponse;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,37 +25,37 @@ public class OrdersController {
     }
 
     @GetMapping("/getall")
-    public List<OrderListResponse> getAll(){
+    public DataResult<List<OrderListResponse>> getAll(){
         return this.orderService.getAll();
     }
 
     @PostMapping("/add")
-    public void add(@RequestBody @Valid CreateOrderRequest createOrderRequest){
-        this.orderService.add(createOrderRequest);
+    public Result add(@RequestBody @Valid CreateOrderRequest createOrderRequest){
+        return this.orderService.add(createOrderRequest);
     }
 
     @PostMapping("/update")
-    public void update(@RequestBody @Valid UpdateOrderRequest updateOrderRequest){
-        this.orderService.update(updateOrderRequest);
+    public Result update(@RequestBody @Valid UpdateOrderRequest updateOrderRequest){
+        return this.orderService.update(updateOrderRequest);
     }
 
     @DeleteMapping("/delete/{orderId}")
-    public void delete(@Valid @PathVariable int orderId){
-        this.orderService.delete(orderId);
+    public Result delete(@Valid @PathVariable int orderId){
+        return this.orderService.delete(orderId);
     }
 
     @GetMapping("/getbyid/{orderId}")
-    public OrderListResponse getById(@PathVariable int orderId){
+    public DataResult<OrderListResponse> getById(@PathVariable int orderId){
         return this.orderService.getById(orderId);
     }
 
     @GetMapping("/getByPage/{pageNumber}/{orderAmountInPage}")
-    public PageDataResponse<OrderListResponse> getByPage(int pageNumber, int orderAmountInPage){
+    public DataResult<PageDataResponse<OrderListResponse>> getByPage(int pageNumber, int orderAmountInPage){
         return this.orderService.getByPage(pageNumber,orderAmountInPage);
     }
 
     @GetMapping("/getByPageWithSorting/{pageNumber}/{orderAmountInPage}/{fieldName}/{isAsc}")
-    public PageDataResponse<OrderListResponse> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc){
+    public DataResult<PageDataResponse<OrderListResponse>> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc){
         return this.orderService.getByPageWithSorting(pageNumber,orderAmountInPage,fieldName,isAsc);
     }
 }

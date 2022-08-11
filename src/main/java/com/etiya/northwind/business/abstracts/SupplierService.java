@@ -4,16 +4,19 @@ import com.etiya.northwind.business.requests.supplierRequests.CreateSupplierRequ
 import com.etiya.northwind.business.requests.supplierRequests.UpdateSupplierRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
 import com.etiya.northwind.business.responses.suppliers.SupplierListResponse;
+import com.etiya.northwind.core.results.DataResult;
+import com.etiya.northwind.core.results.Result;
+
 import java.util.List;
 
 public interface SupplierService {
-    void add(CreateSupplierRequest createSupplierRequest);
-    void update(UpdateSupplierRequest updateSupplierRequest);
-    void delete(int supplierId);
-    List<SupplierListResponse> getAll();
-    SupplierListResponse getById(int supplierId);
+    Result add(CreateSupplierRequest createSupplierRequest);
+    Result update(UpdateSupplierRequest updateSupplierRequest);
+    Result delete(int supplierId);
+    DataResult<List<SupplierListResponse>> getAll();
+    DataResult<SupplierListResponse> getById(int supplierId);
 
-    PageDataResponse<SupplierListResponse> getByPage(int pageNumber, int supplierAmountInPage);
+    DataResult<PageDataResponse<SupplierListResponse>> getByPage(int pageNumber, int orderAmountInPage);
 
-    PageDataResponse<SupplierListResponse> getByPageWithSorting(int pageNumber, int supplierAmountInPage, String fieldName, boolean isAsc);
+    DataResult<PageDataResponse<SupplierListResponse>> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc);
 }
