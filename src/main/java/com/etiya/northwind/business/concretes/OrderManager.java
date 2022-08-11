@@ -35,30 +35,19 @@ import java.util.stream.Collectors;
 public class OrderManager implements OrderService {
     private OrderRepository orderRepository;
     private ModelMapperService modelMapperService;
-
-    private ProductRepository productRepository;
     private OrderDetailsRepository orderDetailsRepository;
-    private CustomerRepository customerRepository;
-    private EmployeeRepository employeeRepository;
 
     @Autowired
     public OrderManager(OrderRepository orderRepository, ModelMapperService modelMapperService, ProductRepository productRepository, OrderDetailsRepository orderDetailsRepository, EmployeeRepository employeeRepository, CustomerRepository customerRepository) {
         this.orderRepository = orderRepository;
         this.modelMapperService = modelMapperService;
-        this.productRepository = productRepository;
         this.orderDetailsRepository = orderDetailsRepository;
-        this.customerRepository = customerRepository;
-        this.employeeRepository = employeeRepository;
     }
 
 
     @Override
     public Result add(CreateOrderRequest createOrderRequest) {
-        Order order = new Order();
-        order.setOrderId(createOrderRequest.getOrderId());
-        order.setOrderDate(createOrderRequest.getOrderDate());
-        order.setCustomer(this.customerRepository.findById(createOrderRequest.getCustomerId()).get());
-        order.setEmployee(this.employeeRepository.findById(createOrderRequest.getEmployeeId()).get());
+        Order order = this.modelMapperService.forRequest().map(createOrderRequest, Order.class);
         orderRepository.save(order);
         saveOrderDetails(createOrderRequest, order);
         return new SuccessResult();
