@@ -1,6 +1,8 @@
 package com.etiya.northwind.business.concretes;
 
 import com.etiya.northwind.business.abstracts.ProductService;
+import com.etiya.northwind.business.requests.PageDataRequest;
+import com.etiya.northwind.business.requests.PageSortRequest;
 import com.etiya.northwind.business.requests.productRequests.CreateProductRequest;
 import com.etiya.northwind.business.requests.productRequests.UpdateProductRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
@@ -20,7 +22,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.prefs.BackingStoreException;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +39,7 @@ public class ProductManager implements ProductService {
     @Override
     public Result add(CreateProductRequest createProductRequest) {
         checkIfProductNameExists(createProductRequest.getProductName());
-        checkIfCategoryLimitExceeded(createProductRequest.getCategoryId());
+        checkIfCategoryLimitExceeds(createProductRequest.getCategoryId());
         Product product = this.modelMapperService.forRequest().map(createProductRequest, Product.class);
         productRepository.save(product);
         return new SuccessResult("Added");
@@ -77,31 +78,31 @@ public class ProductManager implements ProductService {
     }
 
     @Override
-    public DataResult<PageDataResponse<ProductListResponse>> getByPage(int pageNumber, int productAmountInPage) {
-        Pageable pageable = PageRequest.of(pageNumber-1,productAmountInPage);
-        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
+    public DataResult<PageDataResponse<ProductListResponse>> getByPage(PageDataRequest pageDataRequest) {
+        Pageable pageable = PageRequest.of(pageDataRequest.getNumber()-1,pageDataRequest.getItemAmount());
+        return new SuccessDataResult<>(getPageDataResponse(pageable));
     }
 
     @Override
-    public DataResult<PageDataResponse<ProductListResponse>> getByPageWithSorting(int pageNumber, int productAmountInPage, String fieldName, boolean isAsc) {
+    public DataResult<PageDataResponse<ProductListResponse>> getByPageWithSorting(PageSortRequest pageSortRequest) {
         Pageable pageable;
-        if (isAsc){
-            pageable = PageRequest.of(pageNumber-1,productAmountInPage, Sort.by(fieldName).ascending());
+        if (pageSortRequest.isAscending()){
+            pageable = PageRequest.of(pageSortRequest.getNumber()-1,pageSortRequest.getItemAmount(), Sort.by(pageSortRequest.getFieldName()).ascending());
         }else {
-            pageable = PageRequest.of(pageNumber-1,productAmountInPage, Sort.by(fieldName).descending());
+            pageable = PageRequest.of(pageSortRequest.getNumber()-1,pageSortRequest.getItemAmount(), Sort.by(pageSortRequest.getFieldName()).descending());
         }
-        return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
+        return new SuccessDataResult<>(getPageDataResponse(pageable));
     }
 
-    private PageDataResponse<ProductListResponse> getPageDataResponse(int pageNumber, Pageable pageable) {
+    private PageDataResponse<ProductListResponse> getPageDataResponse(Pageable pageable) {
         Page<Product> pages = this.productRepository.findAllProducts(pageable);
         List<ProductListResponse> response =
                 pages.getContent().stream().map(product -> this.modelMapperService.forResponse().map(product, ProductListResponse.class)).collect(Collectors.toList());
 
-        return new PageDataResponse<ProductListResponse>(response, pages.getTotalPages(), pages.getTotalElements(), pageNumber);
+        return new PageDataResponse<>(response, pages.getTotalPages(), pages.getTotalElements(), pageable.getPageNumber());
     }
 
-    private void checkIfCategoryLimitExceeded(int categoryId) {
+    private void checkIfCategoryLimitExceeds(int categoryId) {
         if (productRepository.getCategoryProducts(categoryId).size() >= 15) {
             throw new BusinessException("Category limit exceeded.");
         }

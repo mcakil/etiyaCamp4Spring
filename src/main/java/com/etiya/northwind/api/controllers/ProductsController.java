@@ -48,7 +48,7 @@ public class ProductsController {
         return this.productService.getById(productId);
     }
 
-    @GetMapping("/getByPage/{pageNumber}/{productAmountInPage}")
+    /*@GetMapping("/getByPage/{pageNumber}/{productAmountInPage}")
     public DataResult<PageDataResponse<ProductListResponse>> getByPage(@PathVariable int pageNumber, @PathVariable int productAmountInPage){
         return this.productService.getByPage(pageNumber,productAmountInPage);
     }
@@ -56,5 +56,5 @@ public class ProductsController {
     @GetMapping("/getByPageWithSorting/{pageNumber}/{productAmountInPage}/{fieldName}/{isAsc}")
     public DataResult<PageDataResponse<ProductListResponse>> getByPageWithSorting(@PathVariable int pageNumber, @PathVariable int productAmountInPage, @PathVariable String fieldName, @PathVariable boolean isAsc){
         return this.productService.getByPageWithSorting(pageNumber,productAmountInPage,fieldName,isAsc);
-    }
+    }*/
 }

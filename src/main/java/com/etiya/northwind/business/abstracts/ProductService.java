@@ -1,5 +1,7 @@
 package com.etiya.northwind.business.abstracts;
 
+import com.etiya.northwind.business.requests.PageDataRequest;
+import com.etiya.northwind.business.requests.PageSortRequest;
 import com.etiya.northwind.business.requests.productRequests.CreateProductRequest;
 import com.etiya.northwind.business.requests.productRequests.UpdateProductRequest;
 import com.etiya.northwind.business.responses.PageDataResponse;
@@ -16,7 +18,7 @@ public interface ProductService {
     DataResult<List<ProductListResponse>> getAll();
     DataResult<ProductListResponse> getById(int productId);
 
-    DataResult<PageDataResponse<ProductListResponse>> getByPage(int pageNumber, int orderAmountInPage);
+    DataResult<PageDataResponse<ProductListResponse>> getByPage(PageDataRequest pageDataRequest);
 
-    DataResult<PageDataResponse<ProductListResponse>> getByPageWithSorting(int pageNumber, int orderAmountInPage, String fieldName, boolean isAsc);
+    DataResult<PageDataResponse<ProductListResponse>> getByPageWithSorting(PageSortRequest pageSortRequest);
 }

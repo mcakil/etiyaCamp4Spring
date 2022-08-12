@@ -90,6 +90,11 @@ public class CustomerManager implements CustomerService {
         return new SuccessDataResult<>(getPageDataResponse(pageNumber, pageable));
     }
 
+    @Override
+    public Customer findById(String customerId) {
+        return this.customerRepository.findById(customerId).orElseThrow(() -> new BusinessException("Customer not found."));
+    }
+
     private PageDataResponse<CustomerListResponse> getPageDataResponse(int pageNumber, Pageable pageable) {
         Page<Customer> pages = this.customerRepository.findAllCustomers(pageable);
         List<CustomerListResponse> response =
